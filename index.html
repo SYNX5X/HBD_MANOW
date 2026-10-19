@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#fff9f5">
+  <title>Happy Birthday! 🎂✨</title>
+  <!-- Google Fonts: Charm, Mali & Prompt for luxury & cute Thai typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Charm:wght@400;700&family=Mali:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <!-- Main Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= STAGE 0: LOGIN ================= -->
+  <section id="stage-login" class="stage active">
+    <div class="login-card">
+      <div class="login-badge">
+        <svg class="badge-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 12 20 22 4 22 4 12"></polyline>
+          <rect x="2" y="7" width="20" height="5" rx="1"></rect>
+          <line x1="12" y1="22" x2="12" y2="7"></line>
+          <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path>
+          <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path>
+        </svg>
+      </div>
+      <h1 class="login-title">พื้นที่พิเศษสำหรับคนพิเศษ</h1>
+      <p class="login-subtitle">กรุณายืนยันตัวตนเจ้าของวันเกิดก่อนเข้าสู่กล่องความลับนะ</p>
+
+      <form id="login-form">
+        <div class="input-group">
+          <label for="login-name">ชื่อเล่นของคุณ</label>
+          <input type="text" id="login-name" placeholder="เช่น บีม, มายด์, นัท" autocomplete="off" required>
+        </div>
+
+        <div class="input-group">
+          <label for="login-birthday">วันเกิดของคุณ (พิมพ์ วว/ดด/ปปปป หรือ วว/ดด)</label>
+          <input type="text" id="login-birthday" placeholder="เช่น 21/10/2552, 21/10/2009 หรือ 21/10" autocomplete="off" required>
+        </div>
+
+        <div id="login-error" class="error-msg hidden"></div>
+
+        <button type="submit" class="btn btn-primary btn-glow">
+          <span>เข้าสู่งานวันเกิด</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ================= STAGE 1: DARK ROOM & LIGHT SWITCH (PHYSICS) ================= -->
+  <section id="stage-dark" class="stage hidden">
+    <!-- Interactive Physics Canvas for Rope & Brass Knob -->
+    <canvas id="rope-canvas"></canvas>
+    
+    <div class="physics-hint" id="physics-hint">
+      <div class="hint-pulse-dot"></div>
+      <span>ดึงสายสวิตช์ลงมาให้สุดเพื่อเปิดไฟนะ ⬇️</span>
+    </div>
+    <div class="dark-hint">ห้องมืดจัง... ดึงสวิตช์ไฟหน่อยนะ</div>
+  </section>
+
+  <!-- ================= STAGE 2: CAKE, WISH & BLOW ================= -->
+  <section id="stage-cake" class="stage hidden">
+    <div class="ambient-glow" id="ambient-glow"></div>
+    <div class="party-banners">
+      <span class="sparkle-icon">✦</span>
+      <span class="banner-text">Happy Birthday Celebration</span>
+      <span class="sparkle-icon">✦</span>
+    </div>
+
+    <div class="cake-container">
+      <h2 class="hbd-heading">Happy Birthday to You</h2>
+      <p class="hbd-name-tag">สุขสันต์วันเกิดนะ <span id="display-name" class="highlight-name">คนพิเศษ</span></p>
+
+      <!-- Real Photorealistic Gourmet Birthday Cake Showcase -->
+      <div class="real-cake-stage" id="cake-stage">
+        <div class="cake-halo" id="cake-halo"></div>
+        <div class="cake-frame">
+          <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=900&auto=format&fit=crop&q=85" alt="Birthday Cake" class="real-cake-img" id="real-cake-img">
+          
+          <!-- Interactive Flame precisely positioned on the candle wick -->
+          <div class="candle-flame-anchor" id="flame-anchor">
+            <div class="candle-wick"></div>
+            <div class="flame-core" id="candle-flame"></div>
+            <div class="flame-glow-aura" id="flame-glow-aura"></div>
+            <div class="candle-smoke hidden" id="candle-smoke"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Wish Form & Blow Controls -->
+      <div class="wish-section" id="wish-section">
+        <div class="wish-card">
+          <label for="wish-input" class="wish-label">
+            หลับตาอธิษฐาน แล้วพิมพ์คำขอพรที่อยากได้ที่สุดนะ
+          </label>
+          <textarea id="wish-input" rows="3" placeholder="พิมพ์คำขอพร หรือของขวัญที่อยากได้ที่นี่... (เป็นความลับระหว่างเรานะ 😉)"></textarea>
+
+          <div class="blow-controls">
+            <!-- Mic Blow Button -->
+            <button type="button" id="btn-mic" class="btn btn-mic">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+              <span id="mic-status-text">เปิดไมค์แล้วเป่าลมใส่หน้าจอ</span>
+            </button>
+            <!-- Direct Click Blow Button -->
+            <button type="button" id="btn-click-blow" class="btn btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg>
+              <span>กดเป่าเทียนตรงนี้</span>
+            </button>
+          </div>
+
+          <!-- Mic Volume Visualizer -->
+          <div id="mic-visualizer" class="mic-meter-container hidden">
+            <div class="meter-bar-track">
+              <div class="meter-bar-fill" id="meter-fill"></div>
+            </div>
+            <span class="meter-label">🌬️ กำลังดักฟังลมเป่า... เป่าลมใส่ไมค์แรงๆ ได้เลย!</span>
+          </div>
+
+          <p class="wish-note">* เมื่อเป่าเทียนดับ คำขอพรจะถูกเก็บรักษาไว้ทันที *</p>
+        </div>
+      </div>
+
+      <!-- Success message after blowing -->
+      <div id="blow-success" class="blow-success-msg hidden">
+        <h3>✨ ขอให้ทุกคำอธิษฐานของเธอเป็นจริงนะ ✨</h3>
+        <p>มีสิ่งพิเศษอีกหนึ่งอย่างส่งมาถึงเธอ...</p>
+        <button id="btn-to-letter" class="btn btn-primary btn-glow pulse-btn">
+          <span>เปิดดูของขวัญชิ้นต่อไป</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= STAGE 3: ENVELOPE, CENTERED LETTER & POLAROIDS ================= -->
+  <section id="stage-letter" class="stage hidden">
+    
+    <!-- Initial Envelope View -->
+    <div class="envelope-view" id="envelope-view">
+      <div class="letter-stage-header">
+        <h2>💌 จดหมายฉบับพิเศษสำหรับเธอ</h2>
+        <p>แตะที่ตราครั่ง (Wax Seal) เพื่อเปิดซองจดหมาย</p>
+      </div>
+
+      <div class="envelope-scene">
+        <div class="envelope-wrapper" id="envelope-wrapper">
+          <div class="envelope" id="envelope">
+            <div class="envelope-back"></div>
+            <div class="envelope-peek-letter"></div>
+            <div class="envelope-front"></div>
+            <div class="envelope-flap" id="envelope-flap"></div>
+            
+            <!-- Wax Seal -->
+            <div class="wax-seal" id="wax-seal" title="แตะเพื่อแกะตราครั่ง">
+              <span class="seal-heart">❤</span>
+              <span class="seal-sparkle">✨</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Centered Letter & Mobile Polaroid Deck (Revealed after wax seal broken) -->
+    <div class="opened-letter-view hidden" id="opened-letter-view">
+      
+      <!-- Prominent Centered Letter Paper -->
+      <div class="centered-letter-wrapper" id="centered-letter-wrapper">
+        <article class="letter-card">
+          <div class="letter-postmark">Special Delivery 🌸</div>
+          <div class="letter-date" id="letter-current-date">18 ตุลาคม</div>
+          
+          <h3 class="letter-greeting">ถึง <span id="letter-recipient-name">เธอคนพิเศษ</span>,</h3>
+          
+          <p class="letter-body">
+            สุขสันต์วันเกิดอีกครั้งนะ! ขอให้ปีนี้เป็นปีที่แสนพิเศษและใจดีกับเธอมากๆ 
+            ขอให้ในทุกๆ วันมีเรื่องให้ยิ้มได้ มีคนรอบตัวที่น่ารัก สุขภาพแข็งแรง 
+            และได้กินของอร่อยที่ชอบเยอะๆ เลยนะ 🌻✨
+          </p>
+          <p class="letter-body">
+            ขอให้ทุกวันหลังจากนี้คือวันที่ดีของเธอตลอดไปนะ ไม่ว่าจะยากง่ายฉันจะอยู่ๆข้างๆ
+            คอยช่วยอยู่เสมอนะ  ขอบคุณที่เข้ามานะมีความสุขมากๆที่ได้เจอเธอนะ
+            ขอบคุณที่เป็นสีสันให้ในชีวิตอีกครั้งนะไอหมาเน่า 
+          </p>
+          
+          <div class="letter-signature">
+            <div class="sig-text">รักและปรารถนาดีเสมอ,<br><strong>จากคนหมาเดียของเธอ 💖</strong></div>
+            <div class="sig-stamp">❤ HBD ❤</div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Mobile-Optimized Polaroid Deck / Carousel -->
+      <section class="memories-section" id="memories-section">
+        <div class="memories-title-bar">
+          <h4>ภาพความทรงจำของเรา</h4>
+          <span class="swipe-hint">ปัดซ้าย-ขวาเพื่อดูรูป ➔</span>
+        </div>
+
+        <div class="polaroid-carousel" id="polaroid-carousel">
+          <!-- Polaroid 1 -->
+          <div class="polaroid-item" data-caption="วันเกิดปีนี้ ขอให้มีความสุขมากๆ นะ">
+            <div class="washi-tape washi-pink"></div>
+            <div class="polaroid-img-box">
+              <img src="./pic/1af991c2-09ce-4eac-83de-7e3528a8faf3.jpg" alt="Memory 1" loading="lazy">
+            </div>
+            <p class="polaroid-caption">วันเกิดปีนี้ มีความสุขมากๆ นะ ✨</p>
+          </div>
+
+          <!-- Polaroid 2 -->
+          <div class="polaroid-item" data-caption="ยิ้มเยอะๆ ในทุกๆ วันนะ!">
+            <div class="washi-tape washi-yellow"></div>
+            <div class="polaroid-img-box">
+              <img src="./pic//3cfb4b2d-334f-42bc-ac0e-de951dc6ca8b.jpg" alt="Memory 2" loading="lazy">
+            </div>
+            <p class="polaroid-caption">ยิ้มเยอะๆ ในทุกๆ วันนะ 🌻</p>
+          </div>
+
+          <!-- Polaroid 3 -->
+          <div class="polaroid-item" data-caption="ขอให้ทุกความปรารถนาเป็นจริงเสมอ">
+            <div class="washi-tape washi-blue"></div>
+            <div class="polaroid-img-box">
+              <img src="./pic/0c0c3d92-bebc-43e4-a94b-fd5a4c443658.jpg" alt="Memory 3" loading="lazy">
+            </div>
+            <p class="polaroid-caption">ขอให้ทุกความปรารถนาเป็นจริง 🍰</p>
+          </div>
+        </div>
+
+        <p class="tap-zoom-hint"><em>(แตะที่รูปเพื่อดูภาพขนาดใหญ่ได้นะ)</em></p>
+      </section>
+
+      <!-- ================= SCRATCH CARD GIFT VOUCHER ================= -->
+      <section class="scratch-card-section" id="scratch-card-section">
+        <div class="scratch-card-header">
+          <span class="ticket-tag">✦ SPECIAL BIRTHDAY VOUCHER ✦</span>
+          <h3>ของขวัญชิ้นพิเศษสำหรับเธอ 🎁</h3>
+          <p>ใช้นิ้วขูดแถบสีทองด้านล่างเพื่อเปิดดูสิทธิ์พิเศษนะ</p>
+        </div>
+
+        <div class="scratch-card-wrapper">
+          <div class="scratch-card" id="scratch-card">
+            <!-- Ticket Base Content (Underneath) -->
+            <div class="scratch-ticket-content" id="scratch-ticket-content">
+              <div class="ticket-badge-pill">VIP GOLDEN PASS</div>
+              <h4 class="ticket-title">บัตรกำนัลตามใจ 1 สิทธิ์ ✨</h4>
+              <p class="ticket-desc">เขียนสิ่งที่อยากได้ หรืออยากให้เราทำให้ 1 อย่างลงในตั๋วใบนี้ได้เลย (เราสัญญาว่าจะทำให้เป็นจริง! 😉)</p>
+              
+              <form id="gift-claim-form" class="gift-claim-form">
+                <div class="gift-input-wrapper">
+                  <input type="text" id="gift-wish-input" placeholder="เช่น เลี้ยงบุฟเฟต์, พาไปเที่ยว, ของที่อยากได้..." autocomplete="off" required>
+                  <button type="submit" id="btn-submit-gift" class="btn btn-primary btn-glow">
+                    <span>ใช้สิทธิ์คูปองนี้ ➔</span>
+                  </button>
+                </div>
+              </form>
+              
+              <div id="gift-claim-success" class="gift-claim-success hidden">
+                <span class="success-icon">🎉</span>
+                <h4>บันทึกคำขอของเธอเรียบร้อยแล้ว!</h4>
+                <p>เราได้รับคูปองใบนี้แล้วนะ เตรียมรอรับของขวัญได้เลย! ❤️</p>
+              </div>
+            </div>
+
+            <!-- Scratch Canvas (Foil on top) -->
+            <canvas id="scratch-canvas" class="scratch-canvas"></canvas>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <!-- Photo Zoom Lightbox Modal -->
+  <div id="photo-modal" class="modal-overlay hidden">
+    <div class="photo-modal-card">
+      <button id="photo-modal-close" class="btn-close-modal">&times;</button>
+      <div class="photo-modal-img-wrapper">
+        <img id="photo-modal-img" src="" alt="Zoomed Photo">
+      </div>
+      <p id="photo-modal-caption" class="photo-modal-caption"></p>
+    </div>
+  </div>
+
+  <!-- Firebase App & Realtime Database SDK (Compat CDN) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <!-- Main Script -->
+  <script src="script.js"></script>
+</body>
+</html>
