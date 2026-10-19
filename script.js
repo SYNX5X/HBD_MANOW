@@ -56,6 +56,132 @@ let micAnalyser = null;
 let micAnimationId = null;
 
 // ==========================================================
+// 1.5 UNIFIED CROSS-PLATFORM HAPTIC ENGINE (iOS & Android)
+// รองรับทั้ง Android (navigator.vibrate) และ iOS Taptic Engine (<input switch>)
+// ==========================================================
+class HapticEngine {
+  constructor() {
+    this.isIOS = typeof navigator !== 'undefined' && (
+      /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    );
+    this.hasVibrate = typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function';
+    this.iosLabel = null;
+    this.iosSwitch = null;
+
+    if (typeof document !== 'undefined') {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => this.initIOS());
+      } else {
+        this.initIOS();
+      }
+    }
+  }
+
+  initIOS() {
+    if (typeof document === 'undefined') return;
+    try {
+      let container = document.getElementById('ios-haptic-trigger-box');
+      if (!container) {
+        container = document.createElement('label');
+        container.id = 'ios-haptic-trigger-box';
+        container.setAttribute('aria-hidden', 'true');
+        Object.assign(container.style, {
+          position: 'fixed',
+          top: '-9999px',
+          left: '-9999px',
+          opacity: '0.001',
+          pointerEvents: 'none',
+          width: '1px',
+          height: '1px',
+          overflow: 'hidden',
+          zIndex: '-9999'
+        });
+
+        const sw = document.createElement('input');
+        sw.type = 'checkbox';
+        sw.setAttribute('switch', '');
+        sw.tabIndex = -1;
+        container.appendChild(sw);
+        document.body.appendChild(container);
+      }
+      this.iosLabel = container;
+      this.iosSwitch = container.querySelector('input');
+    } catch (e) {
+      console.warn('iOS haptic init skipped', e);
+    }
+  }
+
+  // กระตุ้น Taptic Engine ของ iOS ผ่าน Switch Element
+  triggerIOS() {
+    if (!this.iosLabel) this.initIOS();
+    if (this.iosLabel) {
+      try {
+        this.iosLabel.click();
+      } catch (e) {}
+    }
+  }
+
+  // 1. สัมผัสเบา (Light: ดึงเชือกแต่ละข้อ, ถูขูดการ์ดแต่ละแถบ)
+  light() {
+    if (this.hasVibrate) {
+      try { navigator.vibrate(15); } catch (e) {}
+    }
+    this.triggerIOS();
+  }
+
+  // 2. สัมผัสปานกลาง (Medium: แตะปุ่ม, เปิดรูปโพลารอยด์, แกะครั่ง)
+  medium() {
+    if (this.hasVibrate) {
+      try { navigator.vibrate([35, 25, 35]); } catch (e) {}
+    }
+    this.triggerIOS();
+    setTimeout(() => this.triggerIOS(), 55);
+  }
+
+  // 3. สัมผัสหนัก / เฉลิมฉลอง (Heavy: ไฟเปิดติด, เป่าเทียนดับ, ส่งคำขอสำเร็จ, ขูดการ์ดเสร็จ)
+  heavy() {
+    if (this.hasVibrate) {
+      try { navigator.vibrate([60, 40, 100]); } catch (e) {}
+    }
+    this.triggerIOS();
+    setTimeout(() => this.triggerIOS(), 60);
+    setTimeout(() => this.triggerIOS(), 120);
+  }
+
+  // 4. สั่นตามระยะความตึงของสายดึงไฟ
+  tension(progress) {
+    if (this.hasVibrate) {
+      const vibeDuration = Math.round(20 + Math.pow(progress, 1.3) * 60);
+      try { navigator.vibrate(vibeDuration); } catch (e) {}
+    }
+    this.triggerIOS();
+  }
+
+  // 5. กำหนดจังหวะสำหรับ Android พร้อมกระตุ้น iOS
+  pattern(androidPattern, iosStyle = 'medium') {
+    if (this.hasVibrate) {
+      try { navigator.vibrate(androidPattern); } catch (e) {}
+    }
+    if (iosStyle === 'heavy') this.heavy();
+    else if (iosStyle === 'light') this.light();
+    else this.medium();
+  }
+
+  // ผูกสัมผัส Taptic เมื่อนิ้วแตะ Element ทันที (User gesture activation)
+  attach(el, style = 'medium') {
+    if (!el) return;
+    el.addEventListener('pointerdown', () => {
+      if (style === 'light') this.light();
+      else if (style === 'heavy') this.heavy();
+      else this.medium();
+    }, { passive: true });
+  }
+}
+
+const haptics = new HapticEngine();
+
+// ==========================================================
 // 2. SYNTHETIC AUDIO (เสียงเอฟเฟกต์สร้างสด ไม่ต้องพึ่งพาไฟล์ mp3)
 // ==========================================================
 function getAudioContext() {
@@ -408,6 +534,7 @@ loginForm.addEventListener('submit', (e) => {
   const isDobMatch = checkDateMatch(enteredDob, BIRTHDAY_PERSON.birthday);
 
   if (isNameMatch && isDobMatch) {
+    haptics.heavy();
     activeUser.name = enteredName;
     activeUser.birthday = enteredDob;
 
@@ -423,6 +550,7 @@ loginForm.addEventListener('submit', (e) => {
     // สลับไปยังด่านที่ 1 (ห้องมืด)
     switchStage('stage-login', 'stage-dark');
   } else {
+    haptics.medium();
     // แจ้งเตือนอย่างเจาะจงว่าชื่อหรือวันเกิดที่ไม่ตรง
     if (!isNameMatch && !isDobMatch) {
       loginErrorEl.textContent = '❌ ทั้งชื่อและวันเกิดไม่ตรงกับที่ตั้งไว้ในระบบเลยน้า! ลองตรวจดูอีกทีนะ 😉';
@@ -511,13 +639,8 @@ class RopePhysics {
       this.lastVibeTime = now;
       this.lastVibeStretch = stretch;
 
-      // 1. สั่นมือถือ: ยิ่งดึงยาว ยิ่งสั่นแรงและนานขึ้น (จาก 20ms ไต่ระดับไปถึง 80ms)
-      if (navigator.vibrate) {
-        const vibeDuration = Math.round(20 + Math.pow(progress, 1.3) * 60);
-        try {
-          navigator.vibrate(vibeDuration);
-        } catch (err) {}
-      }
+      // 1. สั่นมือถือ: ยิ่งดึงยาว ยิ่งสั่นแรงและนานขึ้น (Android สั่นตามระยะ / iOS Taptic Engine Click)
+      haptics.tension(progress);
 
       // 2. เสียงเกียร์สปริงดึงตึง (Ratchet sound)
       playRatchetTick(progress);
@@ -562,11 +685,9 @@ class RopePhysics {
         handle.oldX = px;
         handle.oldY = py;
 
-        // ปลดล็อกระบบเสียงและส่งสัมผัสแตะเริ่มแรก
+        // ปลดล็อกระบบเสียงและส่งสัมผัสแตะเริ่มแรก (Cross-platform Haptic)
         getAudioContext();
-        if (navigator.vibrate) {
-          try { navigator.vibrate(30); } catch (e) {}
-        }
+        haptics.light();
         playSubBassPulse(0.2);
 
         if (physicsHint) physicsHint.style.opacity = '0.3';
@@ -765,9 +886,7 @@ function triggerLightSwitch() {
 
   if (ropePhysics) ropePhysics.stop();
 
-  if (navigator.vibrate) {
-    navigator.vibrate([50, 30, 80]);
-  }
+  haptics.heavy();
 
   playSwitchSound();
 
@@ -812,10 +931,8 @@ function triggerCandleExtinguish() {
   if (realCakeImg) realCakeImg.classList.add('extinguished');
   if (candleSmoke) candleSmoke.classList.remove('hidden');
 
-  // สั่นและยิงพลุกระดาษ Confetti
-  if (navigator.vibrate) {
-    navigator.vibrate([60, 40, 100]);
-  }
+  // สั่นและยิงพลุกระดาษ Confetti (Cross-platform Haptic)
+  haptics.heavy();
 
   if (window.confetti) {
     window.confetti({
@@ -998,9 +1115,7 @@ waxSeal.addEventListener('click', () => {
   if (isEnvelopeOpen) return;
   isEnvelopeOpen = true;
 
-  if (navigator.vibrate) {
-    navigator.vibrate([40, 20]);
-  }
+  haptics.heavy();
 
   playSealSound();
   waxSeal.classList.add('broken');
@@ -1043,9 +1158,7 @@ polaroidItems.forEach((item) => {
       photoModalCaption.textContent = caption || '';
       photoModal.classList.remove('hidden');
 
-      if (navigator.vibrate) {
-        navigator.vibrate(20);
-      }
+      haptics.medium();
     }
   });
 });
@@ -1177,8 +1290,8 @@ function initScratchCard() {
     scratchLastPos = pos;
     scratchMoveCount++;
 
-    if (navigator.vibrate && scratchMoveCount % 4 === 0) {
-      try { navigator.vibrate(12); } catch (e) {}
+    if (scratchMoveCount % 4 === 0) {
+      haptics.light();
     }
 
     if (scratchMoveCount % 6 === 0) {
@@ -1229,9 +1342,7 @@ function initScratchCard() {
     }
 
     playChime();
-    if (navigator.vibrate) {
-      navigator.vibrate([40, 30, 80]);
-    }
+    haptics.heavy();
   }
 
   if (!isScratchEventsBound) {
@@ -1308,6 +1419,8 @@ function initScratchCard() {
         form.classList.add('hidden');
         if (successEl) successEl.classList.remove('hidden');
 
+        haptics.heavy();
+
         if (window.confetti) {
           window.confetti({
             particleCount: 100,
@@ -1320,3 +1433,24 @@ function initScratchCard() {
     }
   }
 }
+
+// ==========================================================
+// 10. BIND DIRECT HAPTIC TOUCH TO ALL INTERACTIVE ELEMENTS
+// (ช่วยให้ iOS 17.4+ และ Android ได้รับการตอบสนองทันทีที่นิ้วแตะ)
+// ==========================================================
+function initButtonHaptics() {
+  haptics.attach(document.getElementById('btn-login'), 'medium');
+  haptics.attach(document.getElementById('btn-click-blow'), 'medium');
+  haptics.attach(document.getElementById('candle-flame'), 'heavy');
+  haptics.attach(document.getElementById('btn-to-letter'), 'medium');
+  haptics.attach(document.getElementById('wax-seal'), 'heavy');
+  haptics.attach(document.getElementById('voucher-claim-btn'), 'heavy');
+  haptics.attach(document.getElementById('btn-mic'), 'light');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initButtonHaptics);
+} else {
+  initButtonHaptics();
+}
+
